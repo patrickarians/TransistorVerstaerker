@@ -1,68 +1,622 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Verstärker-Auslegung</title>
+    <title>Transistor-Verstärker auslegen</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        
+        .schaltung-bereich {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .schaltplan-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .schaltplan-container h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .schaltplan-img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 15px;
+        }
+        
+        .komponenten-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .komponente {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            background: #f0f4ff;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .komponente img {
+            width: 80px;
+            height: auto;
+            margin-bottom: 10px;
+        }
+        
+        .komponente-name {
+            font-weight: bold;
+            color: #333;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        
+        .komponente-wert {
+            color: #667eea;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        
+        .eingaben-bereich {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .eingabe-gruppe {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .eingabe-gruppe label {
+            font-weight: 600;
+            color: #333;
+            font-size: 1em;
+        }
+        
+        .eingabe-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .eingabe-wrapper input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .eingabe-wrapper input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .einheit {
+            color: #666;
+            font-weight: 600;
+            min-width: 40px;
+        }
+        
+        .hilfe-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 20px;
+            font-size: 0.8em;
+            cursor: help;
+            margin-left: 5px;
+        }
+        
+        .hilfe-text {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+            padding: 8px;
+            background: #fffacd;
+            border-left: 3px solid #ffd700;
+            border-radius: 4px;
+        }
+        
+        .button-gruppe {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 14px 24px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-berechnen {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-berechnen:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-reset {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-reset:hover {
+            background: #e0e0e0;
+        }
+        
+        .ergebnisse-bereich {
+            grid-column: 1 / -1;
+        }
+        
+        .ergebnisse-container {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .ergebnisse-container h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .ergebnisse-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .ergebnis-karte {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-top: 4px solid #667eea;
+        }
+        
+        .ergebnis-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        
+        .ergebnis-wert {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .ergebnis-einheit {
+            font-size: 0.85em;
+            color: #999;
+        }
+        
+        .warnung {
+            grid-column: 1 / -1;
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            color: #856404;
+            font-weight: 600;
+        }
+        
+        .warnung.gut {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+        
+        .grafik-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .grafik-container h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        #grafik {
+            width: 100%;
+            height: 400px;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            color: #0c3471;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+        
+        .info-box strong {
+            color: #0c3471;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .komponenten-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Transistor-Verstärker auslegen</h1>
-    
-    <label>Kollektorwiderstand (Ω):</label>
-    <input type="number" id="rc" value="10000" onchange="berechne()"> Ω
-    
-    <label>Basiswiderstand (Ω):</label>
-    <input type="number" id="rb" value="100000" onchange="berechne()"> Ω
-    
-    <label>Emitterwiderstand (Ω):</label>
-    <input type="number" id="re" value="1000" onchange="berechne()"> Ω
-    
-    <label>Transistor-Verstärkung (β):</label>
-    <input type="number" id="beta" value="200" onchange="berechne()"> 
-    
-    <label>Versorgungsspannung (V):</label>
-    <input type="number" id="vcc" value="12" onchange="berechne()"> V
-    
-    <button onclick="berechne()">Berechnen</button>
-    
-    <h2>Ergebnisse:</h2>
-    <div id="ergebnisse"></div>
-    <div id="grafik"></div>
+    <div class="container">
+        <h1>🎵 Transistor-Verstärker auslegen</h1>
+        <p class="subtitle">Interaktive Schaltungsauslegung für Audioverstärker</p>
+        
+        <div class="content">
+            <!-- Linke Seite: Schaltplan + Komponenten -->
+            <div class="schaltung-bereich">
+                <div class="schaltplan-container">
+                    <h3>Schaltplan: Emitterfolger-Verstärker</h3>
+                    <svg class="schaltplan-img" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+                        <!-- VCC Stromversorgung -->
+                        <line x1="200" y1="10" x2="200" y2="40" stroke="#333" stroke-width="2"/>
+                        <text x="210" y="25" font-size="14" fill="#333">+VCC</text>
+                        
+                        <!-- Kollektorwiderstand -->
+                        <rect x="175" y="40" width="50" height="60" fill="none" stroke="#FF6B6B" stroke-width="2"/>
+                        <text x="145" y="80" font-size="12" fill="#FF6B6B" font-weight="bold">RC</text>
+                        
+                        <!-- Verbindung zu Transistor -->
+                        <line x1="200" y1="100" x2="200" y2="120" stroke="#333" stroke-width="2"/>
+                        
+                        <!-- Transistor (NPN) -->
+                        <circle cx="200" cy="150" r="25" fill="none" stroke="#2196F3" stroke-width="2"/>
+                        <text x="190" y="155" font-size="12" fill="#2196F3" font-weight="bold">Q</text>
+                        
+                        <!-- Basis -->
+                        <line x1="150" y1="150" x2="175" y2="150" stroke="#333" stroke-width="2"/>
+                        
+                        <!-- Basiswiderstand -->
+                        <rect x="80" y="130" width="70" height="40" fill="none" stroke="#4CAF50" stroke-width="2"/>
+                        <text x="85" y="170" font-size="12" fill="#4CAF50" font-weight="bold">RB</text>
+                        
+                        <!-- Eingangssignal -->
+                        <line x1="60" y1="150" x2="80" y2="150" stroke="#333" stroke-width="2"/>
+                        <text x="20" y="155" font-size="12" fill="#333">Uin</text>
+                        
+                        <!-- Emitter -->
+                        <line x1="200" y1="175" x2="200" y2="200" stroke="#333" stroke-width="2"/>
+                        
+                        <!-- Emitterwiderstand -->
+                        <rect x="175" y="200" width="50" height="60" fill="none" stroke="#FF9800" stroke-width="2"/>
+                        <text x="145" y="245" font-size="12" fill="#FF9800" font-weight="bold">RE</text>
+                        
+                        <!-- Masse -->
+                        <line x1="200" y1="260" x2="200" y2="280" stroke="#333" stroke-width="2"/>
+                        <line x1="180" y1="280" x2="220" y2="280" stroke="#333" stroke-width="2"/>
+                        <line x1="185" y1="285" x2="215" y2="285" stroke="#333" stroke-width="2"/>
+                        <line x1="190" y1="290" x2="210" y2="290" stroke="#333" stroke-width="2"/>
+                        <text x="190" y="305" font-size="12" fill="#333">GND</text>
+                        
+                        <!-- Ausgangssignal -->
+                        <line x1="225" y1="150" x2="300" y2="150" stroke="#333" stroke-width="2"/>
+                        <text x="310" y="155" font-size="12" fill="#333">Uout</text>
+                    </svg>
+                </div>
+                
+                <div style="margin-top: 20px; width: 100%;">
+                    <h3 style="color: #333; margin-bottom: 15px;">🔧 Bauteile in dieser Schaltung</h3>
+                    <div class="komponenten-grid">
+                        <div class="komponente">
+                            <div class="komponente-name">Transistor (NPN)</div>
+                            <div class="komponente-wert" style="margin-top: 5px;">z.B. BC547</div>
+                        </div>
+                        <div class="komponente">
+                            <div class="komponente-name">Kollektorwiderstand</div>
+                            <div class="komponente-wert" id="rc-anzeige">10 kΩ</div>
+                        </div>
+                        <div class="komponente">
+                            <div class="komponente-name">Basiswiderstand</div>
+                            <div class="komponente-wert" id="rb-anzeige">100 kΩ</div>
+                        </div>
+                        <div class="komponente">
+                            <div class="komponente-name">Emitterwiderstand</div>
+                            <div class="komponente-wert" id="re-anzeige">1 kΩ</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Rechte Seite: Eingaben -->
+            <div class="eingaben-bereich">
+                <h2 style="color: #333; margin-bottom: 20px;">⚙️ Parameter eingeben</h2>
+                
+                <div class="eingabe-gruppe">
+                    <label>
+                        Kollektorwiderstand (Ω)
+                        <span class="hilfe-icon" title="Beeinflusst die Verstärkung und Arbeitspunkt">?</span>
+                    </label>
+                    <div class="eingabe-wrapper">
+                        <input type="number" id="rc" value="10000" onchange="berechne()" onkeyup="berechne()">
+                        <span class="einheit">Ω</span>
+                    </div>
+                    <div class="hilfe-text">💡 Höherer Wert = höhere Verstärkung (aber weniger Stabilität)</div>
+                </div>
+                
+                <div class="eingabe-gruppe">
+                    <label>
+                        Basiswiderstand (Ω)
+                        <span class="hilfe-icon" title="Steuert den Basisstrom">?</span>
+                    </label>
+                    <div class="eingabe-wrapper">
+                        <input type="number" id="rb" value="100000" onchange="berechne()" onkeyup="berechne()">
+                        <span class="einheit">Ω</span>
+                    </div>
+                    <div class="hilfe-text">💡 Für Audioverstärker: typisch 10k – 1M Ω</div>
+                </div>
+                
+                <div class="eingabe-gruppe">
+                    <label>
+                        Emitterwiderstand (Ω)
+                        <span class="hilfe-icon" title="Bestimmt Gegenkopplung und Stabilität">?</span>
+                    </label>
+                    <div class="eingabe-wrapper">
+                        <input type="number" id="re" value="1000" onchange="berechne()" onkeyup="berechne()">
+                        <span class="einheit">Ω</span>
+                    </div>
+                    <div class="hilfe-text">💡 Erhöht Stabilität und reduziert Verzerrung</div>
+                </div>
+                
+                <div class="eingabe-gruppe">
+                    <label>
+                        Transistor-Verstärkung β
+                        <span class="hilfe-icon" title="Typische Werte: 100-300 für BC547">?</span>
+                    </label>
+                    <div class="eingabe-wrapper">
+                        <input type="number" id="beta" value="200" onchange="berechne()" onkeyup="berechne()">
+                        <span class="einheit">—</span>
+                    </div>
+                    <div class="hilfe-text">💡 Aus Transistor-Datenblatt entnehmen</div>
+                </div>
+                
+                <div class="eingabe-gruppe">
+                    <label>
+                        Versorgungsspannung (V)
+                        <span class="hilfe-icon" title="z.B. 12V, 9V, oder 24V">?</span>
+                    </label>
+                    <div class="eingabe-wrapper">
+                        <input type="number" id="vcc" value="12" step="1" onchange="berechne()" onkeyup="berechne()">
+                        <span class="einheit">V</span>
+                    </div>
+                    <div class="hilfe-text">💡 Typisch: 9V, 12V oder 24V für Audio</div>
+                </div>
+                
+                <div class="button-gruppe">
+                    <button class="btn-berechnen" onclick="berechne()">📊 Berechnen</button>
+                    <button class="btn-reset" onclick="reset()">🔄 Zurücksetzen</button>
+                </div>
+                
+                <div class="info-box">
+                    <strong>ℹ️ Tipp für dich:</strong><br>
+                    Versuche verschiedene Werte! Beobachte, wie sich die Verstärkung ändert. Was passiert, wenn du RC verdoppelst?
+                </div>
+            </div>
+        </div>
+        
+        <!-- Ergebnisse -->
+        <div class="ergebnisse-container">
+            <h2>📈 Berechnungsergebnisse</h2>
+            <div class="ergebnisse-grid">
+                <div class="ergebnis-karte">
+                    <div class="ergebnis-label">Spannungsverstärkung (Av)</div>
+                    <div class="ergebnis-wert" id="av">—</div>
+                    <div class="ergebnis-einheit">V/V (oder dB)</div>
+                </div>
+                <div class="ergebnis-karte">
+                    <div class="ergebnis-label">Eingangswiderstand (Zein)</div>
+                    <div class="ergebnis-wert" id="zein">—</div>
+                    <div class="ergebnis-einheit">Ω / kΩ</div>
+                </div>
+                <div class="ergebnis-karte">
+                    <div class="ergebnis-label">Ausgangswiderstand (Zaus)</div>
+                    <div class="ergebnis-wert" id="zaus">—</div>
+                    <div class="ergebnis-einheit">Ω / kΩ</div>
+                </div>
+                <div class="ergebnis-karte">
+                    <div class="ergebnis-label">Basisstrom (IB)</div>
+                    <div class="ergebnis-wert" id="ib">—</div>
+                    <div class="ergebnis-einheit">µA / mA</div>
+                </div>
+                
+                <div id="warnung" class="warnung gut">✓ Verstärkung im normalen Bereich</div>
+            </div>
+        </div>
+        
+        <!-- Frequenzgang Grafik -->
+        <div class="grafik-container">
+            <h2>📊 Frequenzgang</h2>
+            <p style="color: #666; margin-bottom: 15px;">So verhält sich dein Verstärker bei unterschiedlichen Frequenzen:</p>
+            <div id="grafik"></div>
+        </div>
+    </div>
 
     <script>
         function berechne() {
-            let rc = parseFloat(document.getElementById('rc').value);
-            let rb = parseFloat(document.getElementById('rb').value);
-            let re = parseFloat(document.getElementById('re').value);
-            let beta = parseFloat(document.getElementById('beta').value);
-            let vcc = parseFloat(document.getElementById('vcc').value);
+            let rc = parseFloat(document.getElementById('rc').value) || 10000;
+            let rb = parseFloat(document.getElementById('rb').value) || 100000;
+            let re = parseFloat(document.getElementById('re').value) || 1000;
+            let beta = parseFloat(document.getElementById('beta').value) || 200;
+            let vcc = parseFloat(document.getElementById('vcc').value) || 12;
             
-            // Vereinfachte Berechnung
-            let av = rc / re; // Spannungsverstärkung
-            let zein = rb; // Eingangswiderstand (vereinfacht)
-            let zaus = rc; // Ausgangswiderstand (vereinfacht)
+            // Aktualisiere Anzeige der Bauteilwerte
+            document.getElementById('rc-anzeige').textContent = (rc/1000).toFixed(1) + ' kΩ';
+            document.getElementById('rb-anzeige').textContent = (rb/1000).toFixed(1) + ' kΩ';
+            document.getElementById('re-anzeige').textContent = (re/1000).toFixed(1) + ' kΩ';
             
-            let html = `
-                <p><strong>Spannungsverstärkung (Av):</strong> ${av.toFixed(2)}</p>
-                <p><strong>Eingangswiderstand:</strong> ${(zein/1000).toFixed(1)} kΩ</p>
-                <p><strong>Ausgangswiderstand:</strong> ${(zaus/1000).toFixed(1)} kΩ</p>
-                <p><strong>Warnung:</strong> ${av > 500 ? '⚠️ Sehr hohe Verstärkung – Stabilität prüfen!' : '✓ Verstärkung im normalen Bereich'}</p>
-            `;
+            // Spannungsverstärkung (ohne Gegenkopplung)
+            let av = rc / re;
+            let av_dB = 20 * Math.log10(av);
             
-            document.getElementById('ergebnisse').innerHTML = html;
+            // Eingangsimpedanz (vereinfacht)
+            let zein = rb;
             
-            // Frequenzgang zeichnen (vereinfacht)
-            let frequenzen = [20, 50, 100, 500, 1000, 5000, 10000, 20000];
+            // Ausgangsimpedanz (vereinfacht)
+            let zaus = rc;
+            
+            // Basisstrom (bei ~VCC/2 Arbeitspunkt)
+            let ube = 0.7; // Basis-Emitter Spannung
+            let ib = (vcc/2 - ube) / rb * 1000000; // in µA
+            
+            // Anzeige der Ergebnisse
+            document.getElementById('av').textContent = av.toFixed(2) + ' (' + av_dB.toFixed(1) + ' dB)';
+            document.getElementById('zein').textContent = (zein/1000).toFixed(1) + ' kΩ';
+            document.getElementById('zaus').textContent = (zaus/1000).toFixed(1) + ' kΩ';
+            document.getElementById('ib').textContent = ib.toFixed(1) + ' µA';
+            
+            // Warnung anpassen
+            let warnung = document.getElementById('warnung');
+            if (av > 500) {
+                warnung.className = 'warnung';
+                warnung.innerHTML = '⚠️ <strong>Warnung:</strong> Sehr hohe Verstärkung – Stabilität und Rausch prüfen!';
+            } else if (av < 1) {
+                warnung.className = 'warnung';
+                warnung.innerHTML = '⚠️ <strong>Warnung:</strong> Verstärkung < 1 – Signal wird abgeschwächt!';
+            } else {
+                warnung.className = 'warnung gut';
+                warnung.innerHTML = '✓ <strong>Gut!</strong> Verstärkung im optimalen Bereich für Audio (1–500)';
+            }
+            
+            // Frequenzgang zeichnen
+            let frequenzen = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+            
+            // Vereinfachte Hochpass-Charakteristik (AC-Kopplung)
+            let fc_high = 1 / (2 * Math.PI * rb * 10e-6); // Annahme: 10µF Koppelkondensator
+            
+            // Vereinfachte Tiefpass-Charakteristik
+            let fc_low = 1 / (2 * Math.PI * rc * 10e-9); // Annahme: 10nF
+            
             let verstaerkung = frequenzen.map(f => {
-                let fc = 1 / (2 * Math.PI * 1000 * 10e-6); // Cutoff freq (vereinfacht)
-                return av / Math.sqrt(1 + (fc/f)**2);
+                let h_high = f / Math.sqrt(f**2 + fc_high**2);
+                let h_low = 1 / Math.sqrt(1 + (f/fc_low)**2);
+                let gesamt = av * h_high * h_low;
+                return 20 * Math.log10(gesamt);
             });
             
-            Plotly.newPlot('grafik', [{x: frequenzen, y: verstaerkung, type: 'scatter'}], 
-                           {xaxis: {title: 'Frequenz (Hz)', type: 'log'}, 
-                            yaxis: {title: 'Verstärkung (V/V)'},
-                            title: 'Frequenzgang'});
+            Plotly.newPlot('grafik', 
+                [{x: frequenzen, y: verstaerkung, type: 'scatter', 
+                  mode: 'lines+markers',
+                  line: {color: '#667eea', width: 3},
+                  marker: {size: 8, color: '#667eea'}}], 
+                {
+                    xaxis: {title: 'Frequenz (Hz)', type: 'log', gridcolor: '#e0e0e0'},
+                    yaxis: {title: 'Verstärkung (dB)', gridcolor: '#e0e0e0'},
+                    title: 'Frequenzgang deines Verstärkers',
+                    plot_bgcolor: '#f9f9f9',
+                    paper_bgcolor: 'white',
+                    font: {family: 'Segoe UI, sans-serif', size: 12, color: '#333'},
+                    hovermode: 'closest',
+                    margin: {l: 60, r: 40, t: 60, b: 60}
+                },
+                {responsive: true}
+            );
         }
         
+        function reset() {
+            document.getElementById('rc').value = 10000;
+            document.getElementById('rb').value = 100000;
+            document.getElementById('re').value = 1000;
+            document.getElementById('beta').value = 200;
+            document.getElementById('vcc').value = 12;
+            berechne();
+        }
+        
+        // Initiale Berechnung
         berechne();
     </script>
 </body>
