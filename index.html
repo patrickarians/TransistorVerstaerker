@@ -484,7 +484,7 @@
                 
                 <div class="info-box">
                     <strong>ℹ️ Tipp für dich:</strong><br>
-                    Versuche verschiedene Werte! Beobachte, wie sich die Verstärkung ändert. Was passiert, wenn du RC verdoppelst?
+                    Versuche verschiedene Werte! Beobachte, wie sich die Verstärkung und der Frequenzgang ändert. Was passiert, wenn du RC verdoppelst?
                 </div>
             </div>
         </div>
@@ -511,7 +511,7 @@
                 <div class="ergebnis-karte">
                     <div class="ergebnis-label">Basisstrom (IB)</div>
                     <div class="ergebnis-wert" id="ib">—</div>
-                    <div class="ergebnis-einheit">µA / mA</div>
+                    <div class="ergebnis-einheit">µA</div>
                 </div>
                 
                 <div id="warnung" class="warnung gut">✓ Verstärkung im normalen Bereich</div>
@@ -539,14 +539,14 @@
             document.getElementById('rb-anzeige').textContent = (rb/1000).toFixed(1) + ' kΩ';
             document.getElementById('re-anzeige').textContent = (re/1000).toFixed(1) + ' kΩ';
             
-            // Spannungsverstärkung (ohne Gegenkopplung)
+            // Spannungsverstärkung
             let av = rc / re;
             let av_dB = 20 * Math.log10(av);
             
-            // Eingangsimpedanz (vereinfacht)
+            // Eingangsimpedanz
             let zein = rb;
             
-            // Ausgangsimpedanz (vereinfacht)
+            // Ausgangsimpedanz
             let zaus = rc;
             
             // Basisstrom (bei ~VCC/2 Arbeitspunkt)
@@ -557,7 +557,7 @@
             document.getElementById('av').textContent = av.toFixed(2) + ' (' + av_dB.toFixed(1) + ' dB)';
             document.getElementById('zein').textContent = (zein/1000).toFixed(1) + ' kΩ';
             document.getElementById('zaus').textContent = (zaus/1000).toFixed(1) + ' kΩ';
-            document.getElementById('ib').textContent = ib.toFixed(1) + ' µA';
+            document.getElementById('ib').textContent = ib.toFixed(2) + ' µA';
             
             // Warnung anpassen
             let warnung = document.getElementById('warnung');
@@ -572,36 +572,93 @@
                 warnung.innerHTML = '✓ <strong>Gut!</strong> Verstärkung im optimalen Bereich für Audio (1–500)';
             }
             
-            // Frequenzgang zeichnen
-            let frequenzen = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+            // ===== FREQUENZGANG BERECHNUNG =====
+            // Viel mehr Punkte für glatte Kurve
+            let frequenzen = [];
+            for (let i = 10; i <= 20000; i *= 1.1) {
+                frequenzen.push(i);
+            }
             
-            // Vereinfachte Hochpass-Charakteristik (AC-Kopplung)
-            let fc_high = 1 / (2 * Math.PI * rb * 10e-6); // Annahme: 10µF Koppelkondensator
+            // AC-Kopplung Hochpass (Eingangskondensator 10µF, Basiswiderstand)
+            let C_in = 10e-6; // 10µF
+            let fc_high = 1 / (2 * Math.PI * rb * C_in);
             
-            // Vereinfachte Tiefpass-Charakteristik
-            let fc_low = 1 / (2 * Math.PI * rc * 10e-9); // Annahme: 10nF
+            // Ausgangskondensator Tiefpass (10µF, 8Ω Last)
+            let C_out = 10e-6; // 10µF
+            let R_load = 8; // 8 Ohm Lautsprecher
+            let fc_low_out = 1 / (2 * Math.PI * rc * C_out);
+            
+            // Interne Grenzfrequenz durch Kapazitäten
+            let C_be = 50e-12; // Basis-Emitter Kapazität ~50pF
+            let fc_internal = 1 / (2 * Math.PI * rb * C_be);
             
             let verstaerkung = frequenzen.map(f => {
-                let h_high = f / Math.sqrt(f**2 + fc_high**2);
-                let h_low = 1 / Math.sqrt(1 + (f/fc_low)**2);
-                let gesamt = av * h_high * h_low;
+                // Hochpass Eingangskopplung (1. Ordnung)
+                let H_in = f / Math.sqrt(f * f + fc_high * fc_high);
+                
+                // Tiefpass Ausgangskopplung (1. Ordnung)
+                let H_out = fc_low_out / Math.sqrt(fc_low_out * fc_low_out + f * f);
+                
+                // Tiefpass interne Grenzfrequenz (1. Ordnung)
+                let H_internal = fc_internal / Math.sqrt(fc_internal * fc_internal + f * f);
+                
+                // Gesamtfrequenzgang = Av * alle Filter
+                let gesamt = av * H_in * H_out * H_internal;
+                
+                // In dB umrechnen
                 return 20 * Math.log10(gesamt);
             });
             
+            // Plotly Grafik zeichnen
             Plotly.newPlot('grafik', 
-                [{x: frequenzen, y: verstaerkung, type: 'scatter', 
-                  mode: 'lines+markers',
-                  line: {color: '#667eea', width: 3},
-                  marker: {size: 8, color: '#667eea'}}], 
+                [{
+                    x: frequenzen, 
+                    y: verstaerkung, 
+                    type: 'scatter', 
+                    mode: 'lines',
+                    fill: 'tozeroy',
+                    line: {
+                        color: '#667eea', 
+                        width: 3
+                    },
+                    fillcolor: 'rgba(102, 126, 234, 0.2)'
+                }], 
                 {
-                    xaxis: {title: 'Frequenz (Hz)', type: 'log', gridcolor: '#e0e0e0'},
-                    yaxis: {title: 'Verstärkung (dB)', gridcolor: '#e0e0e0'},
+                    xaxis: {
+                        title: 'Frequenz (Hz)', 
+                        type: 'log',
+                        gridcolor: '#e0e0e0'
+                    },
+                    yaxis: {
+                        title: 'Verstärkung (dB)',
+                        gridcolor: '#e0e0e0'
+                    },
                     title: 'Frequenzgang deines Verstärkers',
                     plot_bgcolor: '#f9f9f9',
                     paper_bgcolor: 'white',
-                    font: {family: 'Segoe UI, sans-serif', size: 12, color: '#333'},
+                    font: {
+                        family: 'Segoe UI, sans-serif',
+                        size: 12,
+                        color: '#333'
+                    },
                     hovermode: 'closest',
-                    margin: {l: 60, r: 40, t: 60, b: 60}
+                    margin: {l: 60, r: 40, t: 60, b: 60},
+                    shapes: [
+                        {
+                            type: 'line',
+                            xref: 'x',
+                            yref: 'y',
+                            x0: 20,
+                            y0: av_dB - 3,
+                            x1: 20000,
+                            y1: av_dB - 3,
+                            line: {
+                                color: '#999',
+                                width: 1,
+                                dash: 'dash'
+                            }
+                        }
+                    ]
                 },
                 {responsive: true}
             );
