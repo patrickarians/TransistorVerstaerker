@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verstärker-Auslegung</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>Transistor-Verstärker auslegen</h1>
+    
+    <label>Kollektorwiderstand (Ω):</label>
+    <input type="number" id="rc" value="10000" onchange="berechne()"> Ω
+    
+    <label>Basiswiderstand (Ω):</label>
+    <input type="number" id="rb" value="100000" onchange="berechne()"> Ω
+    
+    <label>Emitterwiderstand (Ω):</label>
+    <input type="number" id="re" value="1000" onchange="berechne()"> Ω
+    
+    <label>Transistor-Verstärkung (β):</label>
+    <input type="number" id="beta" value="200" onchange="berechne()"> 
+    
+    <label>Versorgungsspannung (V):</label>
+    <input type="number" id="vcc" value="12" onchange="berechne()"> V
+    
+    <button onclick="berechne()">Berechnen</button>
+    
+    <h2>Ergebnisse:</h2>
+    <div id="ergebnisse"></div>
+    <div id="grafik"></div>
+
+    <script>
+        function berechne() {
+            let rc = parseFloat(document.getElementById('rc').value);
+            let rb = parseFloat(document.getElementById('rb').value);
+            let re = parseFloat(document.getElementById('re').value);
+            let beta = parseFloat(document.getElementById('beta').value);
+            let vcc = parseFloat(document.getElementById('vcc').value);
+            
+            // Vereinfachte Berechnung
+            let av = rc / re; // Spannungsverstärkung
+            let zein = rb; // Eingangswiderstand (vereinfacht)
+            let zaus = rc; // Ausgangswiderstand (vereinfacht)
+            
+            let html = `
+                <p><strong>Spannungsverstärkung (Av):</strong> ${av.toFixed(2)}</p>
+                <p><strong>Eingangswiderstand:</strong> ${(zein/1000).toFixed(1)} kΩ</p>
+                <p><strong>Ausgangswiderstand:</strong> ${(zaus/1000).toFixed(1)} kΩ</p>
+                <p><strong>Warnung:</strong> ${av > 500 ? '⚠️ Sehr hohe Verstärkung – Stabilität prüfen!' : '✓ Verstärkung im normalen Bereich'}</p>
+            `;
+            
+            document.getElementById('ergebnisse').innerHTML = html;
+            
+            // Frequenzgang zeichnen (vereinfacht)
+            let frequenzen = [20, 50, 100, 500, 1000, 5000, 10000, 20000];
+            let verstaerkung = frequenzen.map(f => {
+                let fc = 1 / (2 * Math.PI * 1000 * 10e-6); // Cutoff freq (vereinfacht)
+                return av / Math.sqrt(1 + (fc/f)**2);
+            });
+            
+            Plotly.newPlot('grafik', [{x: frequenzen, y: verstaerkung, type: 'scatter'}], 
+                           {xaxis: {title: 'Frequenz (Hz)', type: 'log'}, 
+                            yaxis: {title: 'Verstärkung (V/V)'},
+                            title: 'Frequenzgang'});
+        }
+        
+        berechne();
+    </script>
+</body>
+</html>
